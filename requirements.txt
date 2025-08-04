@@ -2,5 +2,6 @@ streamlit
 yfinance
 matplotlib
 feedparser
-ta.momentum
+ta
 requests
+

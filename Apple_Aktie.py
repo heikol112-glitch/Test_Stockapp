@@ -27,7 +27,10 @@ if seite == "📈 Aktienkurse":
         "Letzte 7 Tage": 7,
         "Letzte 14 Tage": 14,
         "Letzte 30 Tage": 30,
-        "Letzte 90 Tage": 90
+        "Letzte 60 Tage": 60,
+        "Letzte 90 Tage": 90,
+        "Letzte 180 Tage": 180,
+        "Letzte 360 Tage": 360
     }
     ausgewählter_zeitraum = st.selectbox("Zeitraum auswählen:", list(tage_optionen.keys()))
     tage = tage_optionen[ausgewählter_zeitraum]
@@ -140,3 +143,4 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
+

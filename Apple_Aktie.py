@@ -3,8 +3,6 @@ import yfinance as yf
 import pandas as pd
 import datetime
 import feedparser
-import asyncio
-from googletrans import Translator
 
 st.set_page_config(page_title="Aktien & News", layout="wide")
 
@@ -117,43 +115,28 @@ elif seite == "📰 Finanznachrichten":
         news_tage = st.selectbox("Nur Nachrichten aus den letzten ...", [1, 3, 7, 14, 30], index=2)
         grenze_datum = datetime.datetime.now() - datetime.timedelta(days=news_tage)
 
-        async def get_translated_text(text, src='en', dest='de'):
-            translator = Translator()
-            # Asynchron übersetzen
-            translated = await asyncio.to_thread(translator.translate, text, src=src, dest=dest)
-            return translated.text
+        for ticker in ticker_liste:
+            st.header(f"📰 News zu {ticker}")
 
-        async def display_news():
-            for ticker in ticker_liste:
-                st.header(f"📰 News zu {ticker}")
+            rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+            feed = feedparser.parse(rss_url)
 
-                rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
-                feed = feedparser.parse(rss_url)
+            if feed.entries:
+                count = 0
+                for eintrag in feed.entries:
+                    try:
+                        published_time = datetime.datetime(*eintrag.published_parsed[:6])
+                        if published_time >= grenze_datum:
+                            st.subheader(eintrag.title)
+                            st.write(published_time.strftime("%Y-%m-%d %H:%M"))
+                            st.write(eintrag.summary)
+                            st.markdown(f"[🔗 Zur Quelle]({eintrag.link})", unsafe_allow_html=True)
+                            st.markdown("---")
+                            count += 1
+                    except:
+                        continue
 
-                if feed.entries:
-                    count = 0
-                    for eintrag in feed.entries:
-                        try:
-                            published_time = datetime.datetime(*eintrag.published_parsed[:6])
-                            if published_time >= grenze_datum:
-                                # Asynchrone Übersetzung der Titel und Zusammenfassungen
-                                translated_title = await get_translated_text(eintrag.title)
-                                translated_summary = await get_translated_text(eintrag.summary)
-
-                                st.subheader(translated_title)
-                                st.write(published_time.strftime("%Y-%m-%d %H:%M"))
-                                st.write(translated_summary)
-                                st.markdown(f"[🔗 Zur Quelle]({eintrag.link})", unsafe_allow_html=True)
-                                st.markdown("---")
-                                count += 1
-                        except Exception as e:
-                            st.warning(f"Fehler bei der Verarbeitung einer Nachricht: {e}")
-                            continue
-
-                    if count == 0:
-                        st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
-                else:
-                    st.warning(f"Keine News gefunden für {ticker}.")
-
-        # Eventloop starten und Nachrichten anzeigen
-        asyncio.run(display_news())
+                if count == 0:
+                    st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
+            else:
+                st.warning(f"Keine News gefunden für {ticker}.")

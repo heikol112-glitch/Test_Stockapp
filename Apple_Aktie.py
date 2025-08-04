@@ -18,6 +18,14 @@ seite = st.sidebar.selectbox(
 )
 
 # ----------------------------------------
+# 📈 SEITE 1: Aktienkurse
+# ----------------------------------------
+if seite == "📈 Aktienkurse":
+    st.title("📈 Aktienkurs-Vergleich")
+
+    # Hier kommen die Codezeilen für Aktienkurse...
+
+# ----------------------------------------
 # 📰 SEITE 2: Finanznachrichten
 # ----------------------------------------
 elif seite == "📰 Finanznachrichten":
@@ -57,7 +65,8 @@ elif seite == "📰 Finanznachrichten":
                             st.markdown(f"[🔗 Zur Quelle]({eintrag.link})", unsafe_allow_html=True)
                             st.markdown("---")
                             count += 1
-                    except:
+                    except Exception as e:
+                        st.warning(f"Fehler bei der Verarbeitung der News: {e}")
                         continue
 
                 if count == 0:

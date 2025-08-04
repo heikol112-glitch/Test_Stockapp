@@ -89,14 +89,18 @@ if seite == "📈 Aktienkurse":
         if not alle_kurse.empty:
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
-            
-            # Überprüfen auf leere Spalten
+
+            # Leere Spalten entfernen, falls vorhanden
             alle_kurse = alle_kurse.dropna(axis=1, how='all')
             
-            # Überprüfe, ob der DataFrame richtig strukturiert ist
-            st.write(alle_kurse.head())  # Überprüfe, wie die Daten aussehen
+            # Prüfen, ob der DataFrame die richtige Struktur hat
+            st.write(alle_kurse.head())  # Zeige die ersten Zeilen des DataFrames zur Kontrolle
 
-            # Falls der Index korrekt ist und nur eine Datumsspalte existiert
+            # Sicherstellen, dass keine Multi-Index-Fehler vorhanden sind
+            if isinstance(alle_kurse.index, pd.MultiIndex):
+                alle_kurse = alle_kurse.droplevel(0)  # Entferne den MultiIndex, falls vorhanden
+
+            # Daten plotten
             st.line_chart(alle_kurse)
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")

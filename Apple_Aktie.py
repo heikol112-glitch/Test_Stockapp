@@ -43,7 +43,8 @@ if seite == "📈 Aktienkurse":
         "Amazon (AMZN)": "AMZN",
         "Google (GOOGL)": "GOOGL",
         "Meta (META)": "META",
-        "Nvidia (NVDA)": "NVDA"
+        "Nvidia (NVDA)": "NVDA",
+        "PlasCred Circular Innovations Inc": "A3ESDD"
     }
 
     auswahl = st.multiselect(
@@ -139,3 +140,4 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
+

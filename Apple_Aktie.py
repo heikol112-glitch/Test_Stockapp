@@ -1,3 +1,33 @@
+# ----------------------------------------
+# Funktionen für SMA, Volatilität und Preiswarnung
+# ----------------------------------------
+
+def plot_sma(ticker, start_date, end_date, sma_period=50):
+    df = yf.download(ticker, start=start_date, end=end_date)
+    df['SMA'] = df['Close'].rolling(window=sma_period).mean()
+    st.line_chart(df[['Close', 'SMA']])
+
+def calculate_volatility(ticker, start_date, end_date):
+    df = yf.download(ticker, start=start_date, end=end_date)
+    df['log_return'] = (df['Close'] / df['Close'].shift(1)).apply(np.log)
+    volatility = df['log_return'].std() * np.sqrt(252)  # Annualisierte Volatilität
+    return volatility
+
+def set_price_alert(ticker, target_price, operator="greater"):
+    df = yf.download(ticker, start=datetime.date.today() - datetime.timedelta(days=30), end=datetime.date.today())
+    current_price = df['Close'][-1]
+    
+    if operator == "greater" and current_price > target_price:
+        st.success(f"{ticker} hat den Preis von {target_price} überschritten!")
+    elif operator == "less" and current_price < target_price:
+        st.success(f"{ticker} ist unter den Preis von {target_price} gefallen!")
+
+def set_price_alert_ui():
+    alert_ticker = st.text_input("Ticker für Preiswarnung (z.B. AAPL)").upper()
+    alert_price = st.number_input("Zielpreis für Warnung", min_value=0.0, step=0.01)
+    alert_operator = st.radio("Preisvergleich", ("greater", "less"))
+
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -158,35 +188,6 @@ elif seite == "📰 Finanznachrichten":
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
 
-
-# ----------------------------------------
-# Funktionen für SMA, Volatilität und Preiswarnung
-# ----------------------------------------
-
-def plot_sma(ticker, start_date, end_date, sma_period=50):
-    df = yf.download(ticker, start=start_date, end=end_date)
-    df['SMA'] = df['Close'].rolling(window=sma_period).mean()
-    st.line_chart(df[['Close', 'SMA']])
-
-def calculate_volatility(ticker, start_date, end_date):
-    df = yf.download(ticker, start=start_date, end=end_date)
-    df['log_return'] = (df['Close'] / df['Close'].shift(1)).apply(np.log)
-    volatility = df['log_return'].std() * np.sqrt(252)  # Annualisierte Volatilität
-    return volatility
-
-def set_price_alert(ticker, target_price, operator="greater"):
-    df = yf.download(ticker, start=datetime.date.today() - datetime.timedelta(days=30), end=datetime.date.today())
-    current_price = df['Close'][-1]
-    
-    if operator == "greater" and current_price > target_price:
-        st.success(f"{ticker} hat den Preis von {target_price} überschritten!")
-    elif operator == "less" and current_price < target_price:
-        st.success(f"{ticker} ist unter den Preis von {target_price} gefallen!")
-
-def set_price_alert_ui():
-    alert_ticker = st.text_input("Ticker für Preiswarnung (z.B. AAPL)").upper()
-    alert_price = st.number_input("Zielpreis für Warnung", min_value=0.0, step=0.01)
-    alert_operator = st.radio("Preisvergleich", ("greater", "less"))
-
     if st.button("Preiswarnung setzen"):
         set_price_alert(alert_ticker, alert_price, alert_operator)
+

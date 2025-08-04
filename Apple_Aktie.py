@@ -1,11 +1,14 @@
 import streamlit as st
 import yfinance as yf
 import matplotlib.pyplot as plt
+from datetime import datetime  # Importieren für aktuelles Datum
 
-st.title("Apple Aktienkurs")
+end_date = datetime.today().strftime('%Y-%m-%d')  # heute im Format JJJJ-MM-TT
 
-ticker_symbol = "AAPL"
-daten = yf.download(ticker_symbol, start="2025-01-01", end="2025-08-02")
+st.title("Plascred Aktienkurs")
+
+ticker_symbol = "XV2.F"
+daten = yf.download(ticker_symbol, start="2025-01-01", end=end_date)
 
 st.write("Daten (Ausschnitt):")
 st.dataframe(daten.tail())

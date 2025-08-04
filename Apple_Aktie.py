@@ -27,16 +27,13 @@ if seite == "📈 Aktienkurse":
         "Letzte 7 Tage": 7,
         "Letzte 14 Tage": 14,
         "Letzte 30 Tage": 30,
-        "Letzte 60 Tage": 60,
-        "Letzte 90 Tage": 90,
-        "Letzte 180 Tage": 180,
-        "Letzte 360 Tage": 360
+        "Letzte 90 Tage": 90
     }
     ausgewählter_zeitraum = st.selectbox("Zeitraum auswählen:", list(tage_optionen.keys()))
     tage = tage_optionen[ausgewählter_zeitraum]
 
     # Normierungsschalter
-    normieren = st.checkbox("📊 Kurse normieren (Start = 100)", value=true)
+    normieren = st.checkbox("📊 Kurse normieren (Start = 100)", value=True)
 
     # Liste vordefinierter Aktien
     vordefinierte_aktien = {
@@ -85,18 +82,13 @@ if seite == "📈 Aktienkurse":
                 if alle_kurse.empty:
                     alle_kurse = df
                 else:
-                    alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
+                    alle_kurse = alle_kurse.join(df, how="outer")
             except Exception as e:
                 st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
 
         if not alle_kurse.empty:
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
-
-            # Falls MultiIndex in den Spalten vorhanden ist, flach machen
-            if isinstance(alle_kurse.columns, pd.MultiIndex):
-                alle_kurse.columns = ['_'.join(col).strip() for col in alle_kurse.columns.values]
-
             st.line_chart(alle_kurse)
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")
@@ -143,8 +135,3 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
-
-
-
-
-

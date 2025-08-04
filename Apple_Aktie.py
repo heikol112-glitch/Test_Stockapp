@@ -90,10 +90,13 @@ if seite == "📈 Aktienkurse":
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
             
-            # Leere Spalten entfernen
+            # Überprüfen auf leere Spalten
             alle_kurse = alle_kurse.dropna(axis=1, how='all')
             
-            st.write(alle_kurse.head())  # Überprüfe, ob die Daten wie erwartet aussehen
+            # Überprüfe, ob der DataFrame richtig strukturiert ist
+            st.write(alle_kurse.head())  # Überprüfe, wie die Daten aussehen
+
+            # Falls der Index korrekt ist und nur eine Datumsspalte existiert
             st.line_chart(alle_kurse)
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")

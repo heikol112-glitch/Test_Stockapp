@@ -81,13 +81,18 @@ if seite == "📈 Aktienkurse":
                 if alle_kurse.empty:
                     alle_kurse = df
                 else:
-                    alle_kurse = alle_kurse.join(df, how="outer")
+                    alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
             except Exception as e:
                 st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
 
         if not alle_kurse.empty:
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
+
+            # Falls MultiIndex in den Spalten vorhanden ist, flach machen
+            if isinstance(alle_kurse.columns, pd.MultiIndex):
+                alle_kurse.columns = ['_'.join(col).strip() for col in alle_kurse.columns.values]
+
             st.line_chart(alle_kurse)
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")
@@ -134,4 +139,3 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
-

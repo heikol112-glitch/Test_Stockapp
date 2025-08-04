@@ -2,3 +2,7 @@ streamlit
 yfinance
 matplotlib
 feedparser
+io
+ta.momentum
+requests
+

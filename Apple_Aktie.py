@@ -2,8 +2,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import datetime
-import feedparser
-import io
 from ta.momentum import RSIIndicator
 import requests
 
@@ -51,21 +49,24 @@ if seite == "📈 Aktienkurse":
 
         alerts = []
         for ticker in ticker_liste:
-            df = yf.download(ticker, start=start, end=datetime.date.today())[["Close"]]
-            df.rename(columns={"Close":ticker}, inplace=True)
-            if normieren:
-                df[ticker] = df[ticker] / df[ticker].iloc[0] * 100
-            if indikator_sma:
-                df[f"SMA_{ticker}"] = df[ticker].rolling(window=20).mean()
-            if indikator_rsi:
-                rsi = RSIIndicator(close=df[ticker], window=14).rsi()
-                df[f"RSI_{ticker}"] = rsi
-                latest_rsi = rsi.iloc[-1]
-                if latest_rsi > 70:
-                    alerts.append(f"{ticker}: RSI {latest_rsi:.1f} → überkauft")
-                elif latest_rsi < 30:
-                    alerts.append(f"{ticker}: RSI {latest_rsi:.1f} → überverkauft")
-            df_all = df_all.join(df, how="outer") if not df_all.empty else df
+            try:
+                df = yf.download(ticker, start=start, end=datetime.date.today())[["Close"]]
+                df.rename(columns={"Close":ticker}, inplace=True)
+                if normieren:
+                    df[ticker] = df[ticker] / df[ticker].iloc[0] * 100
+                if indikator_sma:
+                    df[f"SMA_{ticker}"] = df[ticker].rolling(window=20).mean()
+                if indikator_rsi:
+                    rsi = RSIIndicator(close=df[ticker], window=14).rsi()
+                    df[f"RSI_{ticker}"] = rsi
+                    latest_rsi = rsi.iloc[-1]
+                    if latest_rsi > 70:
+                        alerts.append(f"{ticker}: RSI {latest_rsi:.1f} → überkauft")
+                    elif latest_rsi < 30:
+                        alerts.append(f"{ticker}: RSI {latest_rsi:.1f} → überverkauft")
+                df_all = df_all.join(df, how="outer") if not df_all.empty else df
+            except Exception as e:
+                st.warning(f"Fehler beim Abrufen der Daten für {ticker}: {e}")
 
         if not df_all.empty:
             st.line_chart(df_all[[col for col in df_all if not col.startswith("RSI_")]])

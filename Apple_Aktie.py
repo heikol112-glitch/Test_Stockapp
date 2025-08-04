@@ -4,7 +4,6 @@ import pandas as pd
 import datetime
 import feedparser
 import numpy as np
-import plotly.graph_objs as go
 import time
 
 st.set_page_config(page_title="Aktien & News", layout="wide")
@@ -97,12 +96,7 @@ if seite == "📈 Aktienkurse":
             if isinstance(alle_kurse.columns, pd.MultiIndex):
                 alle_kurse.columns = ['_'.join(col).strip() for col in alle_kurse.columns.values]
 
-            st.line_chart(alle_kurse)
-
-            # Candlestick Chart anzeigen
-            st.subheader("📊 Candlestick Chart")
-            for ticker in ticker_liste:
-                plot_candlestick(ticker, start_date, end_date)
+            st.line_chart(alle_kurse)  # Aktienkurse anzeigen
 
             # Gleitenden Durchschnitt (SMA) anzeigen
             st.subheader("📊 Gleitender Durchschnitt (50-Tage)")
@@ -166,20 +160,8 @@ elif seite == "📰 Finanznachrichten":
 
 
 # ----------------------------------------
-# Funktionen für Candlestick, SMA, Volatilität und Preiswarnung
+# Funktionen für SMA, Volatilität und Preiswarnung
 # ----------------------------------------
-
-def plot_candlestick(ticker, start_date, end_date):
-    df = yf.download(ticker, start=start_date, end=end_date)
-    fig = go.Figure(data=[go.Candlestick(x=df.index,
-                                         open=df['Open'],
-                                         high=df['High'],
-                                         low=df['Low'],
-                                         close=df['Close'])])
-    fig.update_layout(title=f"Candlestick Chart für {ticker}",
-                      xaxis_title="Datum",
-                      yaxis_title="Preis")
-    st.plotly_chart(fig)
 
 def plot_sma(ticker, start_date, end_date, sma_period=50):
     df = yf.download(ticker, start=start_date, end=end_date)

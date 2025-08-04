@@ -87,20 +87,17 @@ if seite == "📈 Aktienkurse":
                 st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
 
         if not alle_kurse.empty:
+            # Den Index auf den 'Date' setzen, falls nötig
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
 
-            # Entferne alle Multi-Index-Level, falls vorhanden
+            # Sicherstellen, dass es keinen MultiIndex gibt
             if isinstance(alle_kurse.index, pd.MultiIndex):
                 alle_kurse.index = alle_kurse.index.droplevel(0)
 
-            # Sicherstellen, dass nur der Date-Index bleibt und keine Mehrfach-Indizes vorhanden sind
-            alle_kurse = alle_kurse.reset_index()  # Index zurücksetzen, falls er Probleme macht
-            alle_kurse.set_index('Date', inplace=True)  # Den Date-Index wiederherstellen
-
             # Leere Spalten entfernen
             alle_kurse = alle_kurse.dropna(axis=1, how='all')
-            
+
             # Zeige den DataFrame zur Kontrolle (kann entfernt werden, wenn die Daten ok sind)
             st.write(alle_kurse.head())
 

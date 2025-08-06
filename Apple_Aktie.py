@@ -3,27 +3,12 @@ import yfinance as yf
 import pandas as pd
 import datetime
 import feedparser
-import plotly.express as px
 
 st.set_page_config(page_title="Aktien & News", layout="wide")
 
 # SESSION STATE: Ticker-Auswahl merken
 if 'ticker_liste' not in st.session_state:
     st.session_state['ticker_liste'] = []
-
-# Funktion zur Ticker-Validierung
-def ist_ticker_gueltig(ticker):
-    try:
-        info = yf.Ticker(ticker).info
-        return 'shortName' in info
-    except:
-        return False
-
-# RSS-Feed Caching
-@st.cache_data(ttl=3600)
-def lade_rss_feed(ticker):
-    url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
-    return feedparser.parse(url)
 
 # Sidebar-Navigation
 seite = st.sidebar.selectbox(
@@ -68,7 +53,7 @@ if seite == "📈 Aktienkurse":
     )
 
     manuelle_ticker = st.text_input(
-        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX, INTC):"
+        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX,INTC):"
     ).upper()
 
     # Tickerliste zusammenbauen
@@ -88,48 +73,28 @@ if seite == "📈 Aktienkurse":
 
         alle_kurse = pd.DataFrame()
 
-        # Kursdaten für gültige Ticker herunterladen
         for ticker in ticker_liste:
-            if ist_ticker_gueltig(ticker):
-                try:
-                    df = yf.download(ticker, start=start_date, end=end_date)[['Close']]
-                    df.rename(columns={"Close": ticker}, inplace=True)
-                    if normieren:
-                        df[ticker] = (df[ticker] / df[ticker].iloc[0]) * 100
-                    if alle_kurse.empty:
-                        alle_kurse = df
-                    else:
-                        alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
-                except Exception as e:
-                    st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
-            else:
-                st.warning(f"Tiker {ticker} ist ungültig.")
-
-        # Überprüfen, ob der DataFrame leer ist
-        if not alle_kurse.empty:
-            alle_kurse.reset_index(inplace=True)  # Sicherstellen, dass der Index zurückgesetzt wird
-            alle_kurse.rename(columns={"Date": "Datum"}, inplace=True)  # Datumsspalte umbenennen
-
-            # Debugging-Ausgabe: Überprüfen des DataFrame vor melt
-            st.write("DataFrame vor melt:")
-            st.write(alle_kurse)
-
-            # Umwandlung in long format
             try:
-                alle_kurse_long = alle_kurse.melt(id_vars=["Datum"], var_name="Ticker", value_name="Kurs")
-                # Interaktive Plotly-Grafik
-                fig = px.line(alle_kurse_long, x="Datum", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
-                st.plotly_chart(fig, use_container_width=True)
+                df = yf.download(ticker, start=start_date, end=end_date)[['Close']]
+                df.rename(columns={"Close": ticker}, inplace=True)
+                if normieren:
+                    df[ticker] = (df[ticker] / df[ticker].iloc[0]) * 100
+                if alle_kurse.empty:
+                    alle_kurse = df
+                else:
+                    alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
             except Exception as e:
-                st.error(f"Fehler bei der Umwandlung in long format: {e}")
+                st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
 
-            # CSV-Download
-            st.download_button(
-                label="📥 Kursdaten als CSV herunterladen",
-                data=alle_kurse.to_csv().encode("utf-8"),
-                file_name="kursdaten.csv",
-                mime="text/csv"
-            )
+        if not alle_kurse.empty:
+            alle_kurse.reset_index(inplace=True)
+            alle_kurse.set_index("Date", inplace=True)
+
+            # Falls MultiIndex in den Spalten vorhanden ist, flach machen
+            if isinstance(alle_kurse.columns, pd.MultiIndex):
+                alle_kurse.columns = ['_'.join(col).strip() for col in alle_kurse.columns.values]
+
+            st.line_chart(alle_kurse)
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")
     else:
@@ -153,7 +118,8 @@ elif seite == "📰 Finanznachrichten":
         for ticker in ticker_liste:
             st.header(f"📰 News zu {ticker}")
 
-            feed = lade_rss_feed(ticker)
+            rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+            feed = feedparser.parse(rss_url)
 
             if feed.entries:
                 count = 0
@@ -174,3 +140,4 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
+

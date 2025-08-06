@@ -110,12 +110,18 @@ if seite == "📈 Aktienkurse":
             alle_kurse.reset_index(inplace=True)  # Sicherstellen, dass der Index zurückgesetzt wird
             alle_kurse.rename(columns={"Date": "Datum"}, inplace=True)  # Datumsspalte umbenennen
 
-            # Umwandlung in long format
-            alle_kurse_long = alle_kurse.melt(id_vars=["Datum"], var_name="Ticker", value_name="Kurs")
+            # Debugging-Ausgabe: Überprüfen des DataFrame vor melt
+            st.write("DataFrame vor melt:")
+            st.write(alle_kurse)
 
-            # Interaktive Plotly-Grafik
-            fig = px.line(alle_kurse_long, x="Datum", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
-            st.plotly_chart(fig, use_container_width=True)
+            # Umwandlung in long format
+            try:
+                alle_kurse_long = alle_kurse.melt(id_vars=["Datum"], var_name="Ticker", value_name="Kurs")
+                # Interaktive Plotly-Grafik
+                fig = px.line(alle_kurse_long, x="Datum", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.error(f"Fehler bei der Umwandlung in long format: {e}")
 
             # CSV-Download
             st.download_button(

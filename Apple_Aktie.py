@@ -105,16 +105,16 @@ if seite == "📈 Aktienkurse":
             else:
                 st.warning(f"Tiker {ticker} ist ungültig.")
 
-        # Interaktive Visualisierung: Umwandlung in long format
+        # Überprüfen, ob der DataFrame leer ist
         if not alle_kurse.empty:
-            alle_kurse.reset_index(inplace=True)  # Index zurücksetzen, falls nötig
-            alle_kurse.set_index("Date", inplace=True)  # "Date" als Index setzen
+            alle_kurse.reset_index(inplace=True)  # Sicherstellen, dass der Index zurückgesetzt wird
+            alle_kurse.rename(columns={"Date": "Datum"}, inplace=True)  # Datumsspalte umbenennen
 
             # Umwandlung in long format
-            alle_kurse_long = alle_kurse.reset_index().melt(id_vars=["Date"], var_name="Ticker", value_name="Kurs")
+            alle_kurse_long = alle_kurse.melt(id_vars=["Datum"], var_name="Ticker", value_name="Kurs")
 
             # Interaktive Plotly-Grafik
-            fig = px.line(alle_kurse_long, x="Date", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
+            fig = px.line(alle_kurse_long, x="Datum", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
             st.plotly_chart(fig, use_container_width=True)
 
             # CSV-Download

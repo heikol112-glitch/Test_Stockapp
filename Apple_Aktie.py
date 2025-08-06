@@ -3,12 +3,27 @@ import yfinance as yf
 import pandas as pd
 import datetime
 import feedparser
+import plotly.express as px
 
 st.set_page_config(page_title="Aktien & News", layout="wide")
 
 # SESSION STATE: Ticker-Auswahl merken
 if 'ticker_liste' not in st.session_state:
     st.session_state['ticker_liste'] = []
+
+# Funktion zur Ticker-Validierung
+def ist_ticker_gueltig(ticker):
+    try:
+        info = yf.Ticker(ticker).info
+        return 'shortName' in info
+    except:
+        return False
+
+# RSS-Feed Caching
+@st.cache_data(ttl=3600)
+def lade_rss_feed(ticker):
+    url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+    return feedparser.parse(url)
 
 # Sidebar-Navigation
 seite = st.sidebar.selectbox(
@@ -53,7 +68,7 @@ if seite == "📈 Aktienkurse":
     )
 
     manuelle_ticker = st.text_input(
-        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX,INTC):"
+        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX, INTC):"
     ).upper()
 
     # Tickerliste zusammenbauen
@@ -73,28 +88,39 @@ if seite == "📈 Aktienkurse":
 
         alle_kurse = pd.DataFrame()
 
+        # Kursdaten für gültige Ticker herunterladen
         for ticker in ticker_liste:
-            try:
-                df = yf.download(ticker, start=start_date, end=end_date)[['Close']]
-                df.rename(columns={"Close": ticker}, inplace=True)
-                if normieren:
-                    df[ticker] = (df[ticker] / df[ticker].iloc[0]) * 100
-                if alle_kurse.empty:
-                    alle_kurse = df
-                else:
-                    alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
-            except Exception as e:
-                st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
+            if ist_ticker_gueltig(ticker):
+                try:
+                    df = yf.download(ticker, start=start_date, end=end_date)[['Close']]
+                    df.rename(columns={"Close": ticker}, inplace=True)
+                    if normieren:
+                        df[ticker] = (df[ticker] / df[ticker].iloc[0]) * 100
+                    if alle_kurse.empty:
+                        alle_kurse = df
+                    else:
+                        alle_kurse = pd.concat([alle_kurse, df], axis=1)  # concat statt join
+                except Exception as e:
+                    st.warning(f"Konnte Daten für {ticker} nicht laden: {e}")
+            else:
+                st.warning(f"Tiker {ticker} ist ungültig.")
 
+        # Interaktive Visualisierung
         if not alle_kurse.empty:
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
 
-            # Falls MultiIndex in den Spalten vorhanden ist, flach machen
-            if isinstance(alle_kurse.columns, pd.MultiIndex):
-                alle_kurse.columns = ['_'.join(col).strip() for col in alle_kurse.columns.values]
+            # Interaktive Plotly-Grafik
+            fig = px.line(alle_kurse, x=alle_kurse.index, y=alle_kurse.columns, labels={'value':'Kurs', 'variable':'Ticker'})
+            st.plotly_chart(fig, use_container_width=True)
 
-            st.line_chart(alle_kurse)
+            # CSV-Download
+            st.download_button(
+                label="📥 Kursdaten als CSV herunterladen",
+                data=alle_kurse.to_csv().encode("utf-8"),
+                file_name="kursdaten.csv",
+                mime="text/csv"
+            )
         else:
             st.warning("Keine gültigen Kursdaten gefunden.")
     else:
@@ -118,8 +144,7 @@ elif seite == "📰 Finanznachrichten":
         for ticker in ticker_liste:
             st.header(f"📰 News zu {ticker}")
 
-            rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
-            feed = feedparser.parse(rss_url)
+            feed = lade_rss_feed(ticker)
 
             if feed.entries:
                 count = 0
@@ -140,3 +165,5 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
+
+

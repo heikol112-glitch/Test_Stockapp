@@ -165,5 +165,3 @@ elif seite == "📰 Finanznachrichten":
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
             else:
                 st.warning(f"Keine News gefunden für {ticker}.")
-
-

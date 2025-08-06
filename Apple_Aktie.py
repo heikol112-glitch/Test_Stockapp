@@ -3,7 +3,10 @@ import yfinance as yf
 import pandas as pd
 import datetime
 import feedparser
+import requests
+from bs4 import BeautifulSoup
 
+# Set up the page config
 st.set_page_config(page_title="Aktien & News", layout="wide")
 
 # SESSION STATE: Ticker-Auswahl merken
@@ -53,7 +56,7 @@ if seite == "📈 Aktienkurse":
     )
 
     manuelle_ticker = st.text_input(
-        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX,INTC):"
+        "Weitere Ticker manuell eingeben (durch Komma getrennt, z. B. NFLX, INTC):"
     ).upper()
 
     # Tickerliste zusammenbauen
@@ -115,22 +118,57 @@ elif seite == "📰 Finanznachrichten":
         news_tage = st.selectbox("Nur Nachrichten aus den letzten ...", [1, 3, 7, 14, 30], index=2)
         grenze_datum = datetime.datetime.now() - datetime.timedelta(days=news_tage)
 
+        # Auswahl der Nachrichtenquelle
+        nachrichtenquelle = st.selectbox(
+            "Wähle eine Nachrichtenquelle:",
+            ["Yahoo Finance", "MarketWatch", "Google News"]
+        )
+
         for ticker in ticker_liste:
             st.header(f"📰 News zu {ticker}")
 
-            rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
-            feed = feedparser.parse(rss_url)
+            if nachrichtenquelle == "Yahoo Finance":
+                rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+                feed = feedparser.parse(rss_url)
 
-            if feed.entries:
+                if feed.entries:
+                    count = 0
+                    for eintrag in feed.entries:
+                        try:
+                            published_time = datetime.datetime(*eintrag.published_parsed[:6])
+                            if published_time >= grenze_datum:
+                                st.subheader(eintrag.title)
+                                st.write(published_time.strftime("%Y-%m-%d %H:%M"))
+                                st.write(eintrag.summary)
+                                st.markdown(f"[🔗 Zur Quelle]({eintrag.link})", unsafe_allow_html=True)
+                                st.markdown("---")
+                                count += 1
+                        except:
+                            continue
+
+                    if count == 0:
+                        st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
+                else:
+                    st.warning(f"Keine News gefunden für {ticker} auf Yahoo Finance.")
+
+            elif nachrichtenquelle == "MarketWatch":
+                search_url = f"https://www.marketwatch.com/investing/stock/{ticker}/news"
+                response = requests.get(search_url)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                news_articles = soup.find_all('li', class_='article__list__item')
+
                 count = 0
-                for eintrag in feed.entries:
+                for article in news_articles:
                     try:
-                        published_time = datetime.datetime(*eintrag.published_parsed[:6])
+                        title = article.find('a').get_text(strip=True)
+                        link = article.find('a')['href']
+                        published_time = article.find('time')['datetime']
+                        published_time = datetime.datetime.fromisoformat(published_time)
+
                         if published_time >= grenze_datum:
-                            st.subheader(eintrag.title)
+                            st.subheader(title)
                             st.write(published_time.strftime("%Y-%m-%d %H:%M"))
-                            st.write(eintrag.summary)
-                            st.markdown(f"[🔗 Zur Quelle]({eintrag.link})", unsafe_allow_html=True)
+                            st.markdown(f"[🔗 Zur Quelle](https://www.marketwatch.com{link})", unsafe_allow_html=True)
                             st.markdown("---")
                             count += 1
                     except:
@@ -138,6 +176,34 @@ elif seite == "📰 Finanznachrichten":
 
                 if count == 0:
                     st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
-            else:
-                st.warning(f"Keine News gefunden für {ticker}.")
+                else:
+                    st.warning(f"Keine News gefunden für {ticker} auf MarketWatch.")
 
+            elif nachrichtenquelle == "Google News":
+                search_url = f"https://news.google.com/search?q={ticker}%20stock"
+                response = requests.get(search_url)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                news_articles = soup.find_all('article')
+
+                count = 0
+                for article in news_articles:
+                    try:
+                        title = article.find('h3').get_text(strip=True)
+                        link = article.find('a')['href']
+                        link = f"https://news.google.com{link}"
+                        published_time = article.find('time')['datetime']
+                        published_time = datetime.datetime.fromisoformat(published_time)
+
+                        if published_time >= grenze_datum:
+                            st.subheader(title)
+                            st.write(published_time.strftime("%Y-%m-%d %H:%M"))
+                            st.markdown(f"[🔗 Zur Quelle]({link})", unsafe_allow_html=True)
+                            st.markdown("---")
+                            count += 1
+                    except:
+                        continue
+
+                if count == 0:
+                    st.info(f"Keine aktuellen News in den letzten {news_tage} Tagen gefunden.")
+                else:
+                    st.warning(f"Keine News gefunden für {ticker} auf Google News.")

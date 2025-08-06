@@ -6,5 +6,6 @@ requests
 googletrans
 asyncio
 plotly
+bs4
 
 

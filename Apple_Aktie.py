@@ -105,13 +105,16 @@ if seite == "📈 Aktienkurse":
             else:
                 st.warning(f"Tiker {ticker} ist ungültig.")
 
-        # Interaktive Visualisierung
+        # Interaktive Visualisierung: Umwandlung in long format
         if not alle_kurse.empty:
             alle_kurse.reset_index(inplace=True)
             alle_kurse.set_index("Date", inplace=True)
 
+            # Umwandlung in long format
+            alle_kurse_long = alle_kurse.reset_index().melt(id_vars=["Date"], var_name="Ticker", value_name="Kurs")
+
             # Interaktive Plotly-Grafik
-            fig = px.line(alle_kurse, x=alle_kurse.index, y=alle_kurse.columns, labels={'value':'Kurs', 'variable':'Ticker'})
+            fig = px.line(alle_kurse_long, x="Date", y="Kurs", color="Ticker", labels={'Kurs':'Kurs', 'Ticker':'Unternehmen'})
             st.plotly_chart(fig, use_container_width=True)
 
             # CSV-Download

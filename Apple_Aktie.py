@@ -107,8 +107,8 @@ if seite == "📈 Aktienkurse":
 
         # Interaktive Visualisierung: Umwandlung in long format
         if not alle_kurse.empty:
-            alle_kurse.reset_index(inplace=True)
-            alle_kurse.set_index("Date", inplace=True)
+            alle_kurse.reset_index(inplace=True)  # Index zurücksetzen, falls nötig
+            alle_kurse.set_index("Date", inplace=True)  # "Date" als Index setzen
 
             # Umwandlung in long format
             alle_kurse_long = alle_kurse.reset_index().melt(id_vars=["Date"], var_name="Ticker", value_name="Kurs")
